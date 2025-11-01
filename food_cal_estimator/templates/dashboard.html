@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="dashboard-container">
+    <h2>Welcome, {{ username }} 👋</h2>
+    <p>Upload an image of your food below to estimate its calories.</p>
+
+    <form action="/analyze" method="POST" enctype="multipart/form-data">
+        <input type="file" name="food_image" accept="image/*" required>
+        <button type="submit">Analyze Image</button>
+    </form>
+
+    {% if result %}
+    <div class="result-section">
+        <h3>🍽️ Results</h3>
+        <img src="{{ url_for('static', filename='uploads/' + image_filename) }}" width="250">
+        <p><strong>Detected Item:</strong> {{ result.food_name }}</p>
+        <p><strong>Estimated Calories:</strong> {{ result.calories }} kcal</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
