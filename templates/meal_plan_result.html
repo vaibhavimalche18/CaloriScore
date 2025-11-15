@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="dashboard-container">
+    <h2>Your Meal Plan 🍽️</h2>
+
+    {% if plan_type == "single" %}
+        <h3>{{ meal_time | capitalize }} ({{ calories }} kcal)</h3>
+        <p><strong>{{ meal.Food }}</strong></p>
+        <p>Calories: {{ meal.Calories }}</p>
+
+    {% else %}
+        <h3>Full Day Balanced Meal Plan ({{ calories }} kcal)</h3>
+
+        <div class="result-box">
+            <h4>🍳 Breakfast</h4>
+            <p>{{ breakfast.Food }} — {{ breakfast.Calories }} kcal</p>
+        </div>
+        
+        <div class="result-box">
+            <h4>🥗 Lunch</h4>
+            <p>{{ lunch.Food }} — {{ lunch.Calories }} kcal</p>
+        </div>
+
+        <div class="result-box">
+            <h4>🍛 Dinner</h4>
+            <p>{{ dinner.Food }} — {{ dinner.Calories }} kcal</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

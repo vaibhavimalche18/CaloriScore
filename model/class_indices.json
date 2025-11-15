@@ -1,0 +1,10 @@
+{
+    "bhatura": 0,
+    "biryani": 1,
+    "dal_makhani": 2,
+    "dum_aloo": 3,
+    "dosa": 4,
+    "naan": 5,
+    "poha": 6,
+    "rasgulla": 7
+}

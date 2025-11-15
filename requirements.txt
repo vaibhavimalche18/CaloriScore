@@ -1,0 +1,19 @@
+# Core dependencies
+pandas
+numpy
+matplotlib
+scikit-learn
+
+# For image processing (later use)
+opencv-python
+tensorflow
+torch
+torchvision
+
+# For web dashboard (if Flask backend used later)
+flask
+flask-cors
+
+# For environment management and data visualization
+seaborn
+jupyter

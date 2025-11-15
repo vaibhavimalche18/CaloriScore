@@ -1,0 +1,200 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="dashboard-container">
+    <h2>Welcome, {{ username }} 👋</h2>
+    <p>Upload an image of your food or directly enter the food name to estimate calories.</p>
+
+    <!-- 🍎 Image Upload Section -->
+    <div class="upload-section">
+        <h3>🍽️ Image Analysis</h3>
+        <form action="/analyze" method="POST" enctype="multipart/form-data" class="upload-form">
+            <input type="file" name="food_image" accept="image/*" required>
+            <button type="submit" class="btn-primary">Analyze Image</button>
+        </form>
+    </div>
+
+    <!-- 📊 Text-based Calorie Prediction Section -->
+    <div class="section">
+        <h3>📊 Predict Calories (Enter Food Item)</h3>
+        <form action="/predict_text" method="POST" class="form-section">
+            <input type="text" name="food_item" placeholder="Enter food name (e.g., apple, pizza, rice)" required>
+            <input type="number" name="quantity" placeholder="Enter quantity (in grams)" value="100" min="1" required>
+            <button type="submit" class="btn-primary">Predict Calories</button>
+        </form>
+
+        {% if predicted_item %}
+        <div class="result-box">
+            <h4>🔍 Prediction Result</h4>
+            {% if predicted_item == "Not found" %}
+                <p><strong>Food item not found in dataset.</strong> Please try another food name.</p>
+            {% else %}
+                <p><strong>🍽️ Food:</strong> {{ predicted_item | capitalize }}</p>
+                <p><strong>🧂 Ingredients:</strong> {{ ingredients }}</p>
+                <p><strong>🔥 Estimated Calories:</strong> <span class="calorie-highlight">{{ predicted_value }} kcal</span></p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    
+
+
+    <!-- 📸 Display if image was analyzed -->
+{% if food_name %}
+  <p><strong>🍽️ Food:</strong> {{ food_name }}</p>
+  <p><strong>Calories:</strong> {{ calories }}</p>
+  <p><strong>Ingredients:</strong> {{ ingredients }}</p>
+  <img src="{{ url_for('static', filename='uploads/' + image_filename) }}" alt="Food Image" width="250">
+{% endif %}
+
+
+<!--  meal generateor-->
+
+</div>
+
+<!-- 🥗 Meal Planner Section -->
+<div class="meal-planner">
+    <button class="btn-primary" id="mealPlannerBtn">Meal Planner 🍽️</button>
+
+    <!-- Hidden Planner Box -->
+    <div class="planner-box" id="plannerBox" style="display:none;">
+        
+        <h3>🧘 Select Diet Type</h3>
+        <select id="dietType" class="input-field">
+            <option value="veg">Veg</option>
+            <option value="nonveg">Non-Veg</option>
+            <option value="vegan">Vegan</option>
+            <option value="glutenfree">Gluten-Free</option>
+        </select>
+
+        <h3>🍱 Select Meal Time</h3>
+        <select id="mealTime" class="input-field">
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+        </select>
+
+        <h3>🔥 Required Calories</h3>
+        <input type="number" id="calRequirement" class="input-field"
+               placeholder="Enter calories required (e.g. 500)" min="100">
+
+        <button class="btn-primary" onclick="submitMealPlan()">Plan My Meal 🥗</button>
+    </div>
+</div>
+
+
+<style>
+.dashboard-container {
+    width: 80%;
+    margin: 40px auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.upload-section, .section {
+    margin-top: 30px;
+    padding: 20px;
+    border-radius: 10px;
+    background: #f8f9fa;
+    box-shadow: 0px 2px 6px rgba(0,0,0,0.05);
+}
+
+input[type="text"], input[type="number"], input[type="file"] {
+    width: 80%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+}
+
+.btn-primary {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background-color 0.3s;
+}
+.btn-primary:hover {
+    background-color: #45a049;
+}
+
+.result-box {
+    margin-top: 20px;
+    padding: 20px;
+    background: #e9ffe7;
+    border-radius: 10px;
+    border: 1px solid #b2f2bb;
+}
+
+.result-section {
+    margin-top: 30px;
+    background: #f1f3f6;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.calorie-highlight {
+    font-size: 18px;
+    font-weight: bold;
+    color: #e85d04;
+}
+
+.food-image {
+    max-width: 250px;
+    margin-top: 10px;
+    border-radius: 10px;
+}
+
+.meal-planner {
+    margin-top: 30px;
+}
+
+.planner-box {
+    margin-top: 15px;
+    padding: 20px;
+    background: #fff4e6;
+    border-radius: 12px;
+    border: 1px solid #ffd8a8;
+    box-shadow: 0px 3px 8px rgba(0,0,0,0.08);
+}
+
+.input-field {
+    width: 80%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #aaa;
+    font-size: 15px;
+}
+
+</style>
+
+<script>
+document.getElementById("mealPlannerBtn").onclick = function() {
+    let box = document.getElementById("plannerBox");
+    box.style.display = (box.style.display === "none") ? "block" : "none";
+};
+
+function submitMealPlan() {
+    const diet = document.getElementById("dietType").value;
+    const meal = document.getElementById("mealTime").value;
+    const calories = document.getElementById("calRequirement").value;
+
+    if (!calories || calories < 100) {
+        alert("Enter valid calories!");
+        return;
+    }
+
+    window.location.href =
+        `/meal_plan?diet=${diet}&meal=${meal}&calories=${calories}`;
+}
+</script>
+
+{% endblock %}

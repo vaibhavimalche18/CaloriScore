@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="home-container">
+  <div class="hero-section">
+    <h1>CaloriScan</h1>
+    <p class="subtitle">AI-powered food calorie estimation. Just describe your food and get instant nutritional insights.</p>
+    
+    <form method="POST" action="/predict" enctype="multipart/form-data" class="search-form">
+      <div class="input-group">
+        <input type="text" name="food_name" placeholder="Enter food (e.g., grilled chicken breast, apple, pasta carbonara...)" required>
+        <button type="submit" class="estimate-btn">
+          <span class="checkmark">✓</span>
+          Estimate
+        </button>
+      </div>
+    </form>
+
+    <div class="upload-section">
+      <label for="imageUpload" class="upload-label">Or upload a food image:</label>
+      <input type="file" name="image" id="imageUpload" accept="image/*">
+    </div>
+
+    <p class="helper-text">Enter a food description above to get started</p>
+  </div>
+</div>
+{% endblock %}

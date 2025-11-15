@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="dashboard-container">
+  <h2>🍽️ Full-day Meal Plan</h2>
+
+  <p><strong>Diet:</strong> {{ diet | capitalize }}</p>
+  <p><strong>Total Calories requested:</strong> {{ total_calories }}</p>
+
+  <h3>Targets</h3>
+  <ul>
+    <li>Breakfast target: {{ targets.breakfast }} kcal</li>
+    <li>Lunch target: {{ targets.lunch }} kcal</li>
+    <li>Dinner target: {{ targets.dinner }} kcal</li>
+  </ul>
+
+  <hr>
+  <h3>Breakfast Suggestions</h3>
+  {% if breakfast_options %}
+    <ul>
+      {% for item in breakfast_options %}
+        <li>{{ item.food_name }} — {{ item.calories }} kcal</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No breakfast suggestions found.</p>
+  {% endif %}
+
+  <h3>Lunch Suggestions</h3>
+  {% if lunch_options %}
+    <ul>
+      {% for item in lunch_options %}
+        <li>{{ item.food_name }} — {{ item.calories }} kcal</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No lunch suggestions found.</p>
+  {% endif %}
+
+  <h3>Dinner Suggestions</h3>
+  {% if dinner_options %}
+    <ul>
+      {% for item in dinner_options %}
+        <li>{{ item.food_name }} — {{ item.calories }} kcal</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No dinner suggestions found.</p>
+  {% endif %}
+
+  <br>
+  <a href="{{ url_for('dashboard') }}" class="btn-primary">⟵ Back to Dashboard</a>
+</div>
+{% endblock %}
