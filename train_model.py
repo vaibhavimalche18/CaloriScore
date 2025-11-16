@@ -4,15 +4,17 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 import os
+import json
 
 # ------------------ Settings ------------------
 IMG_SIZE = (128, 128)
-DATASET_PATH = "dataset/"
+DATASET_PATH = "dataset/Indian Food Images/"
 MODEL_SAVE_PATH = "model/food_cnn_model.h5"
+CLASS_INDICES_PATH = "model/class_indices.json"
 
 # ------------------ Data Preprocessing ------------------
 train_datagen = ImageDataGenerator(
-    rescale=1/255,
+    rescale=1./255,
     rotation_range=40,
     width_shift_range=0.2,
     height_shift_range=0.2,
@@ -23,21 +25,22 @@ train_datagen = ImageDataGenerator(
     validation_split=0.2
 )
 
-
 train_data = train_datagen.flow_from_directory(
     DATASET_PATH,
     target_size=IMG_SIZE,
-    batch_size=32,
+    batch_size=16,          # smaller batch for faster testing
     class_mode="categorical",
-    subset="training"
+    subset="training",
+    shuffle=True
 )
 
 val_data = train_datagen.flow_from_directory(
     DATASET_PATH,
     target_size=IMG_SIZE,
-    batch_size=32,
+    batch_size=16,
     class_mode="categorical",
-    subset="validation"
+    subset="validation",
+    shuffle=False
 )
 
 # ------------------ Build CNN Model ------------------
@@ -79,8 +82,13 @@ callbacks = [
 history = model.fit(
     train_data,
     validation_data=val_data,
-    epochs=50,
+    epochs=15,      # fewer epochs first for faster test
     callbacks=callbacks
 )
 
+# ------------------ Save class indices ------------------
+with open(CLASS_INDICES_PATH, "w") as f:
+    json.dump(train_data.class_indices, f, indent=4)
+
 print(f"✅ Model trained and saved at: {MODEL_SAVE_PATH}")
+print(f"✅ Class indices saved at: {CLASS_INDICES_PATH}")

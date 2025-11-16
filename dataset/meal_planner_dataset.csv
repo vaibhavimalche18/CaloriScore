@@ -52,8 +52,8 @@ salad,230,Veg,Veg,breakfast,"lettuce,cucumber,tomato,carrot",
 glutan free cookies,230,veg,glutan free,breakfast,"almond flour,butter,sugar,vanilla,chocolate chips",
 Grilled Chicken Breast,165,Non-Veg,Gluten-Free,lunch,"chicken, olive oil, spices",
 Egg Omelette,150,Egg,Gluten-Free,breakfast,"eggs,onion, tomato",
-Fish Curry,220,Non-Veg,Gluten-Free,lunch,"fish,coconut milk, spices",	
-Prawn Stir Fry,180,Non-Veg,Gluten-Free,dinner,"prawns, veggies, garlic",	
+Fish Curry,220,Non-Veg,Gluten-Free,lunch,"fish,coconut milk, spices","	"
+Prawn Stir Fry,180,Non-Veg,Gluten-Free,dinner,"prawns, veggies, garlic","	"
 Tandoori Chicken,250,Non-Veg,Gluten-Free,dinner,"chicken, yogurt, tandoori masala",
 Scrambled Eggs,140,Egg,Gluten-Free,breakfast,"eggs, butter, salt",
 Chicken Biryani,450,Non-Veg,Non-Veg,lunch,"chicken,rice,onion,water,masala",
@@ -106,4 +106,3 @@ Gobi Paratha,310,Veg,Veg,breakfast,"wheat,gobi,spices",
 Methi Paratha,280,Veg,Veg,breakfast,"wheat,methi,spices",
 Rajma Chawal,380,Veg,Veg,lunch,"rajma,rice,spices",
 Sambar Rice,260,Veg,Veg,lunch,"rice,sambar,vegetables",
-

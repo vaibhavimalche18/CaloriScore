@@ -101,8 +101,14 @@ def predict_food_from_image(filepath):
     predicted_index = int(np.argmax(prediction))
     
     print("Prediction probabilities:", prediction)
+    predicted_index = int(np.argmax(prediction))
+    predicted_food = INDEX_TO_CLASS.get(str(predicted_index), "Unknown")
+
     print("Predicted index:", predicted_index)
-    print("Predicted food:", INDEX_TO_CLASS.get(predicted_index, "Unknown"))
+    print("Predicted food:", predicted_food)
+
+
+
     
     return INDEX_TO_CLASS.get(predicted_index, "Unknown")
 
@@ -229,9 +235,12 @@ def analyze():
     filepath = os.path.join(UPLOAD_FOLDER, file.filename)
     file.save(filepath)
 
-    detected_food = predict_food_from_image(filepath).lower()
+    # Predict food from image
+    detected_food = predict_food_from_image(filepath)
 
-    row = nutrition_df[nutrition_df["food_item"] == detected_food]
+    # Fix underscores, title case, and lookup case-insensitively
+    detected_food_readable = detected_food.replace("_", " ").title()
+    row = nutrition_df[nutrition_df["food_item"].str.lower() == detected_food_readable.lower()]
 
     if not row.empty:
         calories = row["calories"].values[0]
@@ -244,11 +253,12 @@ def analyze():
         "dashboard.html",
         username=session["username"],
         image_filename=file.filename,
-        food_name=detected_food.capitalize(),
+        food_name=detected_food_readable,
         calories=calories,
         ingredients=ingredients,
         title="Dashboard"
     )
+
 
 @app.route("/meal_plan")
 def meal_plan():
