@@ -253,39 +253,108 @@ def analyze():
 @app.route("/meal_plan")
 def meal_plan():
 
-    diet = request.args.get("diet")          # veg, non-veg, vegan, gluten-free
-    goal = int(request.args.get("calories")) # daily calorie target
+    diet = request.args.get("diet")
+    goal = int(request.args.get("calories"))
 
     df = pd.read_csv("dataset/meal_planner_dataset.csv")
 
-    # Filter by diet
-    df = df[df["diet_type"].str.lower() == diet.lower()]
+    # Normalize CSV entries
+    df["diet_type"] = df["diet_type"].str.lower().str.strip()
+    df["diet_type"] = df["diet_type"].replace({
+        "non veg": "non-veg",
+        "nonveg": "non-veg",
+        "veg": "veg",
+        "glutan free": "gluten-free",
+        "gluten free": "gluten-free",
+        "egg": "eggetarian",
+        "eggetarian": "eggetarian"
+    })
+
+    # Normalize user input
+    diet = diet.lower().strip().replace(" ", "-").replace("_", "-")
+
+    diet_alias = {
+        "veg": "veg",
+        "vegetarian": "veg",
+
+        "nonveg": "non-veg",
+        "non-veg": "non-veg",
+        "non-vegetarian": "non-veg",
+
+        "glutenfree": "gluten-free",
+        "gluten-free": "gluten-free",
+
+        "egg": "eggetarian",
+        "eggetarian": "eggetarian",
+
+        "vegan": "vegan"
+    }
+
+    diet = diet_alias.get(diet, diet)
+
+    # -------------------------
+    # Meal Filtering
+    # -------------------------
+    if diet == "veg":
+        df = df[df["diet_type"] == "veg"]
+
+    elif diet == "non-veg":
+        df = df[df["diet_type"].isin(["veg", "non-veg"])]
+
+    elif diet == "gluten-free":
+        df = df[df["diet_type"] == "gluten-free"]
+
+    elif diet == "vegan":
+        df = df[df["diet_type"] == "vegan"]
+
+    elif diet == "eggetarian":
+        df = df[df["diet_type"] == "eggetarian"]
+
+    else:
+        return f"Unknown diet: {diet}"
 
     if df.empty:
-        return f"No meals found for the selected diet ({diet}). Please update your CSV."
+        return f"No meals found for diet: {diet}"
 
-    # Function to pick multiple meals that fit in calorie range
-    def select_meals(meal_type):
+    # -------------------------
+    # UPDATED NON-VEG LOGIC
+    # -------------------------
+    def select_meals(meal_type, diet):
         meal_df = df[df["meal_type"].str.contains(meal_type, case=False, na=False)]
-
         if meal_df.empty:
             return [], 0
 
+        veg_items = meal_df[meal_df["diet_type"] == "veg"]
+        nonveg_items = meal_df[meal_df["diet_type"] == "non-veg"]
+
         selected = []
         total_cal = 0
+        limit = goal / 3
 
-        for _, row in meal_df.iterrows():
-            if total_cal + row["calories"] <= goal / 3:  # divide calories for each meal
+        # Force at least 1 non-veg for non-veg diet
+        if diet == "non-veg" and not nonveg_items.empty:
+            for _, row in nonveg_items.iterrows():
+                if total_cal + row["calories"] <= limit:
+                    selected.append(row)
+                    total_cal += row["calories"]
+                    break
+
+        # Fill remaining calories with veg + non-veg
+        remaining = pd.concat([veg_items, nonveg_items]).sort_values("calories")
+
+        for _, row in remaining.iterrows():
+            if total_cal + row["calories"] <= limit:
                 selected.append(row)
                 total_cal += row["calories"]
 
         return selected, total_cal
 
-    breakfast_items, breakfast_total = select_meals("breakfast")
-    lunch_items, lunch_total = select_meals("lunch")
-    dinner_items, dinner_total = select_meals("dinner")
-
-    day_total = breakfast_total + lunch_total + dinner_total
+    # -------------------------
+    # Generate Meals
+    # -------------------------
+    breakfast_items, breakfast_total = select_meals("breakfast", diet)
+    lunch_items, lunch_total = select_meals("lunch", diet)
+    dinner_items, dinner_total = select_meals("dinner", diet)
 
     return render_template(
         "meal_result.html",
@@ -296,9 +365,11 @@ def meal_plan():
         breakfast_total=breakfast_total,
         lunch_total=lunch_total,
         dinner_total=dinner_total,
-        day_total=day_total,
+        day_total=breakfast_total + lunch_total + dinner_total,
         goal=goal
     )
+
+
 
 
 # ############################################################################
