@@ -183,7 +183,7 @@ def predict_text():
     row = nutrition_df[nutrition_df["food_item"] == food_name]
 
     if row.empty:
-        # fuzzy match
+        
         possible_match = get_close_matches(food_name, nutrition_df["food_item"].tolist(), n=1)
 
         if possible_match:

@@ -82,7 +82,7 @@ callbacks = [
 history = model.fit(
     train_data,
     validation_data=val_data,
-    epochs=15,      # fewer epochs first for faster test
+    epochs=10,      # fewer epochs first for faster test
     callbacks=callbacks
 )
 
