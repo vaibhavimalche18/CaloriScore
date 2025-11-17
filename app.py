@@ -134,6 +134,47 @@ def get_meal_suggestion(df, target, top_n=5):
     df_local['diff'] = (df_local['calories'] - target).abs()
     return df_local.sort_values('diff').head(top_n)[['food_name', 'calories']].to_dict(orient='records')
 
+def recommend_meals_for_user(username, top_n=6):
+    # fetch user profile
+    cur = mysql.connection.cursor(dictionary=True)
+    cur.execute("SELECT * FROM user_profile WHERE username=%s", (username,))
+    user = cur.fetchone()
+    if not user:
+        return []
+
+    diet = user.get('diet_preference') or ""
+    allergies = (user.get('allergies') or "").lower().split(',')
+    dislikes = (user.get('disliked_foods') or "").lower().split(',')
+    goal_cal = user.get('calorie_goal') or 2000
+    per_meal_target = float(goal_cal) / 3.0
+
+    # simple SQL to fetch candidate meals (avoid complex text matching here)
+    cur.execute("SELECT * FROM meals")
+    meals = cur.fetchall()
+    recs = []
+    for m in meals:
+        tags = (m.get('tags') or "").lower()
+        # diet filter
+        if diet.lower().startswith("veg") and not m.get('is_veg'):
+            continue
+        # allergies / dislikes filter (very simple substring check)
+        skip = False
+        for a in allergies:
+            if a.strip() and a.strip() in tags:
+                skip = True; break
+        for d in dislikes:
+            if d.strip() and d.strip() in tags:
+                skip = True; break
+        if skip:
+            continue
+        # score closeness to per-meal calories (smaller difference => higher score)
+        score = -abs((m['calories_per_serving'] or 0) - per_meal_target)
+        # optionally use popularity to boost
+        score += (m.get('popularity',0) * 0.01)
+        recs.append((score, m))
+
+    recs.sort(reverse=True, key=lambda x: x[0])
+    return [r[1] for r in recs[:top_n]]
 
 
 # ======================================================
@@ -149,22 +190,86 @@ def signup():
 
 
 
-@app.route('/login', methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        username = request.form["username"]
-        session["username"] = username
-        flash(f"Welcome {username}!")
-        return redirect(url_for("dashboard"))
-    return render_template("login.html", title="Login")
+# @app.route('/login', methods=["GET", "POST"])
+# def login():
+#     if request.method == "POST":
+#         username = request.form["username"]
+#         session["username"] = username
+#         flash(f"Welcome {username}!")
+#         return redirect(url_for("dashboard"))
+#     return render_template("login.html", title="Login")
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check user exists
+        cursor.execute("SELECT * FROM users WHERE username=%s AND password=%s",
+                       (username, password))
+        user = cursor.fetchone()
+
+        if user:
+            session['username'] = username
+
+            # AUTO CREATE PROFILE IF NOT EXISTS
+            cursor.execute("SELECT * FROM user_profile WHERE username=%s", (username,))
+            profile = cursor.fetchone()
+
+            if not profile:
+                cursor.execute(
+                    "INSERT INTO user_profile (username) VALUES (%s)",
+                    (username,)
+                )
+                conn.commit()
+
+            conn.close()
+            return redirect(url_for("dashboard"))
+
+        conn.close()
+        flash("Invalid credentials")
+        return redirect(url_for("login"))
+
+    return render_template("login.html")
+
+
+
+# @app.route('/dashboard')
+# def dashboard():
+#     if "username" not in session:
+#         flash("Please login first")
+#         return redirect(url_for("login"))
+#     return render_template("dashboard.html", username=session["username"], title="Dashboard")
+
+import mysql.connector
 
 @app.route('/dashboard')
 def dashboard():
     if "username" not in session:
-        flash("Please login first")
-        return redirect(url_for("login"))
-    return render_template("dashboard.html", username=session["username"], title="Dashboard")
+        return redirect('/login')
+
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Bhagya@27",
+        database="food_estimator"
+    )
+
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute("SELECT * FROM user_profile WHERE username=%s", (session['username'],))
+    profile = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    return render_template("dashboard.html", profile=profile)
+
+
 
 
 # ======================================================
@@ -379,76 +484,148 @@ def meal_plan():
         goal=goal
     )
 
+####################################################################COMPUTE THE BMI
+def compute_bmi(weight_kg, height_cm):
+    if not weight_kg or not height_cm:
+        return None
+    h = float(height_cm) / 100.0
+    try:
+        bmi = float(weight_kg) / (h * h)
+        return round(bmi, 2)
+    except Exception:
+        return None
+
+def compute_bmr(weight, height, age, gender):
+    # expects weight in kg, height in cm, age in years
+    if gender.lower() == "male":
+        return 88.362 + (13.397 * float(weight)) + (4.799 * float(height)) - (5.677 * float(age))
+    else:
+        return 447.593 + (9.247 * float(weight)) + (3.098 * float(height)) - (4.330 * float(age))
+
+ACTIVITY_MULT = {
+    "Sedentary": 1.2,
+    "Lightly Active": 1.375,
+    "Moderately Active": 1.55,
+    "Very Active": 1.725
+}
+
+def compute_daily_calorie_goal(weight, height, age, gender, activity_level, goal):
+    try:
+        bmr = compute_bmr(weight, height, age, gender)
+        mult = ACTIVITY_MULT.get(activity_level, 1.2)
+        maintenance = bmr * mult
+        if goal.lower().startswith("weight loss"):
+            return round(max(1200, maintenance - 500), 2)   # floor at 1200
+        elif goal.lower().startswith("weight gain"):
+            return round(maintenance + 300, 2)
+        else:
+            return round(maintenance, 2)
+    except Exception:
+        return None
+
+
+#############add the db details:
+import mysql.connector
+
+def get_db_connection():
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Bhagya@27",
+        database="food_estimator"
+    )
+    return conn
 
 
 
-# ############################################################################
+@app.route("/profile")
+def profile():
+    if "username" not in session:
+        return redirect(url_for("login"))
 
-# @app.route("/meal_plan")
-# def meal_plan():
+    username = session["username"]
+    return render_template("profile.html", username=username)
 
-#     diet = request.args.get("diet")  # Veg / Non-Veg
-#     total_calories = int(request.args.get("calories"))
+#################################################################################---------SAVE PROFILE
+import mysql.connector
 
-#     csv_path = "dataset/meal_planner_dataset.csv"
-#     df = pd.read_csv(csv_path)
+@app.route('/save_profile', methods=['POST'])
+def save_profile():
 
-#     # Normalize
-#     df["diet_type"] = df["diet_type"].str.lower().str.strip()
-#     df["meal_type"] = df["meal_type"].str.lower().str.replace(" ", "")
-#     diet = diet.lower().strip()
+    username = request.form["username"]
+    age = int(request.form["age"])
+    gender = request.form["gender"]
+    height = float(request.form["height"])
+    weight = float(request.form["weight"])
+    activity = request.form["activity"]
+    goal = request.form["goal"]
+    diet_pref = request.form["diet_pref"]
+    allergies = request.form["allergies"]
+    dislikes = request.form["dislikes"]
 
-#     # Filter by diet
-#     df = df[df["diet_type"] == diet]
+    # BMI calculation
+    height_m = height / 100
+    bmi = weight / (height_m * height_m)
 
-#     if df.empty:
-#         return "No meals found for selected diet."
+    # Daily calories
+    if gender == "Male":
+        bmr = 88.36 + (13.4 * weight) + (4.8 * height) - (5.7 * age)
+    else:
+        bmr = 447.6 + (9.2 * weight) + (3.1 * height) - (4.3 * age)
 
-#     # ----- CALORIE SPLIT -----
-#     targets = {
-#         "breakfast": total_calories * 0.30,
-#         "lunch": total_calories * 0.40,
-#         "dinner": total_calories * 0.30
-#     }
+    activity_factors = {
+        "Sedentary": 1.2,
+        "Lightly Active": 1.375,
+        "Moderately Active": 1.55,
+        "Very Active": 1.725
+    }
+    maintenance_calories = bmr * activity_factors[activity]
 
-#     # Function to pick multiple meals
-#     def pick_multiple(meal_name, target):
-#         temp = df[df["meal_type"].str.contains(meal_name)]
+    if goal == "Weight Loss":
+        daily_calories = maintenance_calories - 500
+    elif goal == "Weight Gain":
+        daily_calories = maintenance_calories + 300
+    else:
+        daily_calories = maintenance_calories
 
-#         if temp.empty:
-#             return [], 0
+    # CONNECT USING mysql.connector
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Bhagya@27",
+        database="food_estimator"
+    )
 
-#         temp = temp.sort_values("calories")  # lowest to highest
+    cursor = conn.cursor()
 
-#         selected = []
-#         total = 0
+    query = """
+        UPDATE user_profile SET 
+            age=%s, gender=%s, height=%s, weight=%s,
+            activity_level=%s, goal=%s, diet_preference=%s,
+            allergies=%s, disliked_foods=%s, bmi=%s, daily_calorie_need=%s
+        WHERE username=%s
+    """
 
-#         for _, row in temp.iterrows():
-#             if total + row["calories"] <= target:
-#                 selected.append(row)
-#                 total += row["calories"]
+    values = (
+        age, gender, height, weight,
+        activity, goal, diet_pref,
+        allergies, dislikes, bmi, daily_calories,
+        username
+    )
 
-#         return selected, total
+    cursor.execute(query, values)
+    conn.commit()
 
-#     breakfast_items, breakfast_total = pick_multiple("breakfast", targets["breakfast"])
-#     lunch_items, lunch_total = pick_multiple("lunch", targets["lunch"])
-#     dinner_items, dinner_total = pick_multiple("dinner", targets["dinner"])
+    cursor.close()
+    conn.close()
 
-#     # total day calories
-#     day_total = breakfast_total + lunch_total + dinner_total
+    return redirect('/dashboard')
 
-#     return render_template(
-#         "meal_result.html",
-#         breakfast_items=breakfast_items,
-#         lunch_items=lunch_items,
-#         dinner_items=dinner_items,
-#         breakfast_total=breakfast_total,
-#         lunch_total=lunch_total,
-#         dinner_total=dinner_total,
-#         day_total=day_total,
-#         goal=total_calories,
-#         diet=diet.capitalize()
-#     )
+
+
+
+
+
 
 
 @app.route("/logout")

@@ -34,6 +34,7 @@
             {% endif %}
         </div>
         {% endif %}
+        
     </div>
 
     
@@ -51,6 +52,8 @@
 <!--  meal generateor-->
 
 </div>
+
+
 
 <!-- 🥗 Meal Planner Section -->
 <div class="meal-planner">
@@ -174,6 +177,8 @@ input[type="text"], input[type="number"], input[type="file"] {
     font-size: 15px;
 }
 
+
+
 </style>
 
 <script>
@@ -196,5 +201,6 @@ function submitMealPlan() {
         `/meal_plan?diet=${diet}&meal=${meal}&calories=${calories}`;
 }
 </script>
+
 
 {% endblock %}

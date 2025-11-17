@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="profile-card">
+    <h2 class="title">Enter Your Profile Details</h2>
+
+    <form action="/save_profile" method="POST" class="form">
+
+        <label>username</label>
+        <input type="text" name="username" value="{{ session['username'] }}" readonly>
+
+        <label>Age</label>
+        <input type="number" name="age" required>
+
+        <label>Gender</label>
+        <select name="gender">
+            <option>Male</option>
+            <option>Female</option>
+        </select>
+
+        <label>Height (cm)</label>
+        <input type="number" name="height" required>
+
+        <label>Weight (kg)</label>
+        <input type="number" name="weight" required>
+
+        <label>Activity Level</label>
+        <select name="activity">
+            <option>Sedentary</option>
+            <option>Lightly Active</option>
+            <option>Moderately Active</option>
+            <option>Very Active</option>
+        </select>
+
+        <label>Goal</label>
+        <select name="goal">
+            <option>Weight Loss</option>
+            <option>Weight Gain</option>
+            <option>Maintenance</option>
+        </select>
+
+        <label>Diet Preference</label>
+        <select name="diet_pref">
+            <option>Veg</option>
+            <option>Non-Veg</option>
+            <option>Vegan</option>
+            <option>Eggetarian</option>
+            <option>Gluten-Free</option>
+        </select>
+
+        <label>Allergies</label>
+        <input type="text" name="allergies" placeholder="nuts, dairy, seafood">
+
+        <label>Disliked Foods</label>
+        <input type="text" name="dislikes" placeholder="onion, brinjal">
+
+        <button type="submit" class="save-btn">Save Profile</button>
+    </form>
+</div>
+
+</body>
+</html>

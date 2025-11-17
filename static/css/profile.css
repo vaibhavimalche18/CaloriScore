@@ -1,0 +1,82 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: #f4f7fb;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.profile-card {
+    width: 400px;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.08);
+    animation: fadeIn 0.6s ease-in-out;
+}
+
+.title {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+label {
+    font-weight: 600;
+    color: #444;
+}
+
+input, select {
+    padding: 10px;
+    border: 1px solid #d4d8df;
+    border-radius: 8px;
+    outline: none;
+    font-size: 15px;
+    transition: 0.2s;
+}
+
+input:focus, select:focus {
+    border-color: #4e9af1;
+    box-shadow: 0 0 5px rgba(78, 154, 241, 0.4);
+}
+
+.save-btn {
+    margin-top: 18px;
+    padding: 12px;
+    background: #4e9af1;
+    border: none;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.save-btn:hover {
+    background: #1f7ae0;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ⭐ Add THIS at the bottom */
+input[readonly] {
+    background: #f2f2f2;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
